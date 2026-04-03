@@ -1,0 +1,68 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-quantum-void text-text-main font-sans antialiased m-0 p-0 overflow-hidden;
+  }
+
+  /* Custom Neon Scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: #0B101A;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #00F0FF33;
+    border-radius: 10px;
+    border: 1px solid #00F0FF44;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #00F0FF;
+    box-shadow: 0 0 10px #00F0FF;
+  }
+}
+
+@layer utilities {
+  .glow-cyan {
+    box-shadow: 0 0 15px rgba(0, 240, 255, 0.2);
+  }
+  .glow-red {
+    box-shadow: 0 0 20px rgba(255, 0, 60, 0.3);
+  }
+  .glow-purple {
+    box-shadow: 0 0 20px rgba(176, 38, 255, 0.3);
+  }
+}
+
+.glass-panel {
+  background: rgba(11, 16, 26, 0.7);
+  backdrop-filter: blur(12px);
+  border: 1px solid #1A2639;
+}
+
+/* Custom Range Input (Premium Quantum Slider) */
+input[type="range"].quantum-slider {
+  @apply w-full h-1 bg-quantum-surface rounded-lg appearance-none cursor-pointer accent-neon-cyan;
+  background: #1A2639;
+}
+
+input[type="range"].quantum-slider::-webkit-slider-thumb {
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  background: #00F0FF;
+  border-radius: 50%;
+  border: 4px solid #0B101A;
+  box-shadow: 0 0 10px #00F0FF, 0 0 20px #00F0FF44;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+input[type="range"].quantum-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+  box-shadow: 0 0 15px #00F0FF, 0 0 25px #00F0FF66;
+}
