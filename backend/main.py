@@ -92,7 +92,8 @@ app.add_middleware(
         "http://localhost:3000",    # CRA dev (fallback)
         "http://127.0.0.1:5173",
         "http://127.0.0.1:5174",
-        "https://quantumciphersim.vercel.app",  # Vercel production
+        "https://quantumciphersim.vercel.app",       # Vercel (primary)
+        "https://quantumciphersim-zeta.vercel.app",  # Vercel (actual deployed URL)
         *_extra_origins,            # Any extra origins set via env var
     ],
     allow_credentials = True,
