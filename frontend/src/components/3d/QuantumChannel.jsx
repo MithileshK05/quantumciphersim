@@ -13,7 +13,7 @@
 
 import React, { useRef, useMemo } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
-import { OrbitControls, Text, Float, Sparkles, Grid, MeshTransmissionMaterial, Environment } from '@react-three/drei';
+import { OrbitControls, Text, Float, Sparkles, Grid, Environment } from '@react-three/drei';
 import { EffectComposer, Bloom, ChromaticAberration } from '@react-three/postprocessing';
 import { BlendFunction } from 'postprocessing';
 import * as THREE from 'three';
@@ -186,14 +186,15 @@ const QuantumScene = React.memo(({ noiseLevel, isCompromised, isAttacked, mitiga
 
   return (
     <>
-      {/* Lighting: ambient + colored rim lights + white top light for glass refraction */}
-      <ambientLight intensity={0.5} />
-      <pointLight position={[0, 5, 0]} intensity={1.5} color="#ffffff" />  {/* white top: crucial for glass */}
-      <pointLight position={[0, 6, 4]} intensity={2.0} color={channelColor} />
-      <pointLight position={[-12, 2, 0]} intensity={1.0} color={channelColor} />
-      <pointLight position={[12, 2, 0]} intensity={1.0} color={channelColor} />
-      {/* Environment IBL — required for MeshTransmissionMaterial refraction to compute correctly */}
-      <Environment preset="night" />
+      {/* Lighting: boosted for glass refraction — MeshTransmissionMaterial needs strong IBL */}
+      <ambientLight intensity={1.2} />
+      <pointLight position={[0, 8, 0]} intensity={3.0} color="#ffffff" />
+      <pointLight position={[0, -8, 0]} intensity={2.0} color="#ffffff" />  {/* back-light forces transparency */}
+      <pointLight position={[0, 6, 4]} intensity={2.5} color={channelColor} />
+      <pointLight position={[-12, 2, 0]} intensity={1.5} color={channelColor} />
+      <pointLight position={[12, 2, 0]} intensity={1.5} color={channelColor} />
+      {/* Environment IBL — kept lightweight without transmission */}
+      <Environment preset="dawn" />
 
       {/* Deep-space background sphere */}
       <mesh scale={[60, 60, 60]} geometry={DEPTH_GEOM}>
@@ -216,40 +217,51 @@ const QuantumScene = React.memo(({ noiseLevel, isCompromised, isAttacked, mitiga
         infiniteGrid
       />
 
-      {/* ── Main Channel Group ───────────────────────────────────────────── */}
+      {/* ── Main Channel Group ────────────────────────────────────────── */}
       <group>
 
-        {/* ── Glass Fiber Tube (MeshTransmissionMaterial) ───────────────
-             The outer tube is ALWAYS transparent — inner contents are what
-             change state. Only wireframe changes for E91 shielded mode.
-             MeshTransmissionMaterial provides proper IBL-based glass refraction.
+        {/* ── Fiber Tube: transparent quantum channel ──────────────────
+             Uses proven transparent+opacity approach.
+             Inner tube: very translucent (opacity 0.12) base glass shell.
+             Outer glow ring: wider, very faint, emissive colored ring for depth.
         ───────────────────────────────────────────────────────────────── */}
+
+        {/* Outer glow halo ring — very faint, just defines the tube boundary */}
+        <mesh rotation={[0, 0, Math.PI / 2]}>
+          <cylinderGeometry args={[1.7, 1.7, 20, 32, 1, true]} />
+          <meshStandardMaterial
+            color={channelColor}
+            transparent={true}
+            opacity={0.03}
+            side={THREE.DoubleSide}
+            emissive={channelColor}
+            emissiveIntensity={0.05}
+            depthWrite={false}
+          />
+        </mesh>
+
+        {/* Inner glass tube shell — near-invisible so photons show through */}
         <mesh rotation={[0, 0, Math.PI / 2]}>
           <cylinderGeometry args={[1.4, 1.4, 20, 32, 1, true]} />
           {isE91Shielded ? (
-            // Wireframe cage during E91 shield: lets ribbons show clearly
-            <meshBasicMaterial
+            <meshStandardMaterial
               color="#B026FF"
-              transparent
-              opacity={0.18}
+              transparent={true}
+              opacity={0.15}
               wireframe
               side={THREE.DoubleSide}
             />
           ) : (
-            // All other states: cinematic glass refraction
-            <MeshTransmissionMaterial
-              backside
-              backsideThickness={0.4}
-              thickness={0.5}
-              roughness={0.05}
-              transmission={1}
-              ior={1.5}
-              chromaticAberration={0.04}
-              color="#080C12"
-              attenuationColor={channelColor}
-              attenuationDistance={4}
-              samples={4}
-              resolution={256}
+            <meshStandardMaterial
+              color={channelColor}
+              transparent={true}
+              opacity={0.05}
+              side={THREE.DoubleSide}
+              emissive={channelColor}
+              emissiveIntensity={0.0}
+              roughness={0.1}
+              metalness={0.0}
+              depthWrite={false}
             />
           )}
         </mesh>

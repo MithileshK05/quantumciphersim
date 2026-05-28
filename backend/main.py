@@ -15,6 +15,7 @@ Run:
 """
 
 from contextlib import asynccontextmanager
+import os
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -75,8 +76,13 @@ app = FastAPI(
 )
 
 # ---------------------------------------------------------------------------
-# CORS: allow React frontend (Vite dev server on port 5173)
+# CORS: allow React frontend on localhost (dev) and Vercel (production)
 # ---------------------------------------------------------------------------
+
+# Read additional allowed origins from environment (set on Render dashboard)
+_extra_origins = [
+    o.strip() for o in os.getenv("ALLOWED_ORIGINS", "").split(",") if o.strip()
+]
 
 app.add_middleware(
     CORSMiddleware,
@@ -86,6 +92,8 @@ app.add_middleware(
         "http://localhost:3000",    # CRA dev (fallback)
         "http://127.0.0.1:5173",
         "http://127.0.0.1:5174",
+        "https://quantumciphersim.vercel.app",  # Vercel production
+        *_extra_origins,            # Any extra origins set via env var
     ],
     allow_credentials = True,
     allow_methods     = ["GET", "POST", "OPTIONS"],

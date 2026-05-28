@@ -2,13 +2,16 @@ import { useState, useEffect, useMemo } from 'react';
 import { useQKDMetrics } from '../hooks/useQKDMetrics';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { QuantumChannel } from '../components/3d/QuantumChannel';
+import { useSimulation } from '../context/SimulationContext';
 
 const SimView = () => {
   // ── State Setup ──────────────────────────────────────────────────────────
-  const [noiseLevel, setNoiseLevel] = useState(0.05);
-  const [isAttacked, setIsAttacked] = useState(false);
-  const [autoMitigate, setAutoMitigate] = useState(false);
-  const [activeProtocol, setActiveProtocol] = useState('BB84');
+  const { 
+    isAttacked, setIsAttacked,
+    noiseLevel, setNoiseLevel,
+    autoMitigate, setAutoMitigate,
+    activeProtocol, setActiveProtocol
+  } = useSimulation();
 
   // Rolling state buffer for streaming data (max 40 points)
   const [dataStream, setDataStream] = useState([]);
@@ -46,7 +49,7 @@ const SimView = () => {
       };
 
       const newArray = [...prev, newPoint];
-      return newArray.length > 40 ? newArray.slice(newArray.length - 40) : newArray;
+      return newArray.length > 60 ? newArray.slice(newArray.length - 60) : newArray;
     });
   }, [metrics]);
 
@@ -217,8 +220,8 @@ const SimView = () => {
                     wrapperStyle={{ fontSize: '10px', fontFamily: 'JetBrains Mono', paddingBottom: '8px' }}
                     formatter={(value) => <span style={{ color: value === 'QBER (%)' ? '#B026FF' : '#00F0FF' }}>{value}</span>}
                   />
-                  <Line name="QBER (%)" type="monotone" dataKey="qber" stroke="#B026FF" strokeWidth={2} dot={false} isAnimationActive={false} />
-                  <Line name="Key Rate (×10 kb/s)" type="monotone" dataKey="key_rate" stroke="#00F0FF" strokeWidth={3} dot={false} isAnimationActive={false} />
+                  <Line name="QBER (%)" type="basis" dataKey="qber" stroke="#B026FF" strokeWidth={2.5} dot={false} isAnimationActive={false} strokeLinecap="round" strokeLinejoin="round" />
+                  <Line name="Key Rate (×10 kb/s)" type="basis" dataKey="key_rate" stroke="#00F0FF" strokeWidth={3} dot={false} isAnimationActive={false} strokeLinecap="round" strokeLinejoin="round" />
                 </LineChart>
               </ResponsiveContainer>
             )}

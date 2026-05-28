@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useQKDMetrics } from '../hooks/useQKDMetrics';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { ArrowRight, Database, Cpu, Activity, ShieldAlert, ShieldCheck } from 'lucide-react';
+import { useSimulation } from '../context/SimulationContext';
 
 const modelsConfig = [
   { id: 'gradient_boosting', name: 'Gradient Boosting', acc: 0.9376, prec: 0.9536, rec: 0.9574, f1: 0.9555 },
@@ -12,10 +13,21 @@ const modelsConfig = [
 
 const MLAnalysis = () => {
   const [selectedModelId, setSelectedModelId] = useState('gradient_boosting');
-  const [isAttacked, setIsAttacked] = useState(true); // Toggle to simulate live threat state
+  const { 
+    isAttacked, setIsAttacked,
+    noiseLevel,
+    autoMitigate,
+    activeProtocol
+  } = useSimulation(); // Global simulation state synced with SimView
   
-  // Sync with SimView's hook signature for cache persistence
-  const { data: metrics } = useQKDMetrics(0.05, isAttacked ? 1.0 : 0.0, selectedModelId, false, 'BB84');
+  // Sync with SimView's hook signature for exact backend state match
+  const { data: metrics } = useQKDMetrics(
+    noiseLevel, 
+    isAttacked ? 1.0 : 0.0, 
+    selectedModelId, 
+    autoMitigate, 
+    activeProtocol
+  );
 
   const selectedModel = modelsConfig.find(m => m.id === selectedModelId);
 

@@ -22,7 +22,7 @@ export const useQKDMetrics = (
   return useQuery({
     queryKey: ['qkdMetrics', noiseLevel, attackProbability, activeModel, autoMitigate, activeProtocol],
     queryFn: async () => {
-      const response = await axios.get('http://localhost:8000/metrics', {
+      const response = await axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/metrics`, {
         params: {
           noise_level: noiseLevel,
           attack_probability: attackProbability,
