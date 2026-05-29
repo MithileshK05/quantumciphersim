@@ -31,19 +31,33 @@ const MLAnalysis = () => {
 
   const selectedModel = modelsConfig.find(m => m.id === selectedModelId);
 
-  // Derived threat data for BarChart (Memoized to prevent re-animation loops)
+  // Derived threat data for BarChart
   const { threatData, threatLevel, isHighThreat } = React.useMemo(() => {
     const confidenceScore = metrics?.confidence_score ?? 0;
-    const currentThreatLevel = metrics?.threat_level || 'LOW';
+    const rawThreatLevel  = metrics?.threat_level || 'LOW';
+    const mitigationStatus = metrics?.mitigation_status || 'NONE';
+
+    // When mitigation is active (PA_ACTIVE or E91_ACTIVE), the channel is
+    // defended — override the bars to show Secure Channel as dominant.
+    const isMitigated = mitigationStatus === 'PA_ACTIVE' || mitigationStatus === 'E91_ACTIVE';
+
+    // Effective threat level: mitigated channels are always LOW
+    const effectiveThreatLevel = isMitigated ? 'LOW' : rawThreatLevel;
+    const effectiveIsHighThreat = effectiveThreatLevel.toUpperCase() === 'HIGH';
+
+    // Bar values: mitigated → flip the bars so Secure Channel dominates
+    const attackBarValue  = isMitigated ? confidenceScore * 20  : confidenceScore * 100;
+    const secureBarValue  = isMitigated ? 100 - attackBarValue  : (1 - confidenceScore) * 100;
+
     return {
       threatData: [
-        { name: 'Intercept-Resend Attack', value: confidenceScore * 100, fill: '#FF003C' },
-        { name: 'Secure Channel', value: (1 - confidenceScore) * 100, fill: '#00F0FF' }
+        { name: 'Intercept-Resend Attack', value: attackBarValue, fill: isMitigated ? '#FF003C44' : '#FF003C' },
+        { name: 'Secure Channel',          value: secureBarValue, fill: '#00F0FF' }
       ],
-      threatLevel: currentThreatLevel,
-      isHighThreat: currentThreatLevel.toUpperCase() === 'HIGH'
+      threatLevel: isMitigated ? `MITIGATED (${mitigationStatus.replace('_', ' ')})` : effectiveThreatLevel,
+      isHighThreat: effectiveIsHighThreat
     };
-  }, [metrics?.confidence_score, metrics?.threat_level]);
+  }, [metrics?.confidence_score, metrics?.threat_level, metrics?.mitigation_status]);
 
   return (
     <div className="h-full w-full bg-[#030508] text-text-main overflow-y-auto custom-scrollbar p-6">
