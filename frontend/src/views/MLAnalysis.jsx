@@ -32,32 +32,48 @@ const MLAnalysis = () => {
   const selectedModel = modelsConfig.find(m => m.id === selectedModelId);
 
   // Derived threat data for BarChart
-  const { threatData, threatLevel, isHighThreat } = React.useMemo(() => {
-    const confidenceScore = metrics?.confidence_score ?? 0;
-    const rawThreatLevel  = metrics?.threat_level || 'LOW';
-    const mitigationStatus = metrics?.mitigation_status || 'NONE';
+  // Three clear states:
+  //  1. No attack        → Secure Channel dominant (cyan, large)
+  //  2. Attack, no mitigation → Intercept-Resend dominant (bright red, large)
+  //  3. Attack, mitigated → Attack detected bar in AMBER (small), Secure dominant (cyan)
+  const { threatData, threatLevel, isHighThreat, isMitigated } = React.useMemo(() => {
+    const confidenceScore   = metrics?.confidence_score ?? 0;
+    const rawThreatLevel    = metrics?.threat_level || 'LOW';
+    const mitigationStatus  = metrics?.mitigation_status || 'NONE';
+    const mitigated = mitigationStatus === 'PA_ACTIVE' || mitigationStatus === 'E91_ACTIVE';
 
-    // When mitigation is active (PA_ACTIVE or E91_ACTIVE), the channel is
-    // defended — override the bars to show Secure Channel as dominant.
-    const isMitigated = mitigationStatus === 'PA_ACTIVE' || mitigationStatus === 'E91_ACTIVE';
+    let attackValue, secureValue, attackFill, effectiveThreat;
 
-    // Effective threat level: mitigated channels are always LOW
-    const effectiveThreatLevel = isMitigated ? 'LOW' : rawThreatLevel;
-    const effectiveIsHighThreat = effectiveThreatLevel.toUpperCase() === 'HIGH';
+    if (mitigated) {
+      // Attack WAS detected (amber = neutralized threat) but system is secure
+      // Show a modest amber bar so the user knows an attack was caught & stopped
+      attackValue    = Math.min(confidenceScore * 25, 22); // cap at 22% max
+      secureValue    = 100 - attackValue;
+      attackFill     = '#FF9500';                           // amber = neutralized
+      effectiveThreat = 'LOW';
+    } else {
+      // Raw ML detection: show each model's actual confidence difference
+      attackValue    = confidenceScore * 100;
+      secureValue    = (1 - confidenceScore) * 100;
+      attackFill     = '#FF003C';                           // red = active threat
+      effectiveThreat = rawThreatLevel;
+    }
 
-    // Bar values: mitigated → flip the bars so Secure Channel dominates
-    const attackBarValue  = isMitigated ? confidenceScore * 20  : confidenceScore * 100;
-    const secureBarValue  = isMitigated ? 100 - attackBarValue  : (1 - confidenceScore) * 100;
+    const label = mitigated
+      ? `MITIGATED (${mitigationStatus.replace('_', ' ')})`
+      : effectiveThreat;
 
     return {
       threatData: [
-        { name: 'Intercept-Resend Attack', value: attackBarValue, fill: isMitigated ? '#FF003C44' : '#FF003C' },
-        { name: 'Secure Channel',          value: secureBarValue, fill: '#00F0FF' }
+        { name: 'Intercept-Resend Attack', value: attackValue,  fill: attackFill },
+        { name: 'Secure Channel',          value: secureValue,  fill: '#00F0FF'  }
       ],
-      threatLevel: isMitigated ? `MITIGATED (${mitigationStatus.replace('_', ' ')})` : effectiveThreatLevel,
-      isHighThreat: effectiveIsHighThreat
+      threatLevel:  label,
+      isHighThreat: effectiveThreat.toUpperCase() === 'HIGH',
+      isMitigated:  mitigated
     };
   }, [metrics?.confidence_score, metrics?.threat_level, metrics?.mitigation_status]);
+
 
   return (
     <div className="h-full w-full bg-[#030508] text-text-main overflow-y-auto custom-scrollbar p-6">
@@ -154,7 +170,15 @@ const MLAnalysis = () => {
                           <Cell 
                             key={`cell-${index}`} 
                             fill={entry.fill} 
-                            className={entry.name === 'Intercept-Resend Attack' && isHighThreat ? 'drop-shadow-[0_0_12px_rgba(255,0,60,0.8)]' : entry.name === 'Secure Channel' && !isHighThreat ? 'drop-shadow-[0_0_12px_rgba(0,240,255,0.6)]' : ''} 
+                            className={
+                              entry.name === 'Intercept-Resend Attack' && isHighThreat && !isMitigated
+                                ? 'drop-shadow-[0_0_12px_rgba(255,0,60,0.8)]'
+                                : entry.name === 'Intercept-Resend Attack' && isMitigated
+                                ? 'drop-shadow-[0_0_10px_rgba(255,149,0,0.7)]'
+                                : entry.name === 'Secure Channel' && !isHighThreat
+                                ? 'drop-shadow-[0_0_12px_rgba(0,240,255,0.6)]'
+                                : ''
+                            }
                           />
                       ))}
                       </Bar>
