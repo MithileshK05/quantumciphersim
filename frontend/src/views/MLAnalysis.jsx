@@ -35,27 +35,29 @@ const MLAnalysis = () => {
   // Three clear states:
   //  1. No attack        → Secure Channel dominant (cyan, large)
   //  2. Attack, no mitigation → Intercept-Resend dominant (bright red, large)
-  //  3. Attack, mitigated → Attack detected bar in AMBER (small), Secure dominant (cyan)
+  //  3. Attack, mitigated → Attack bar in AMBER sized by eve_contribution (varies per model)
   const { threatData, threatLevel, isHighThreat, isMitigated } = React.useMemo(() => {
-    const confidenceScore   = metrics?.confidence_score ?? 0;
-    const rawThreatLevel    = metrics?.threat_level || 'LOW';
+    const confidenceScore   = metrics?.confidence_score  ?? 0;
+    const rawThreatLevel    = metrics?.threat_level      || 'LOW';
     const mitigationStatus  = metrics?.mitigation_status || 'NONE';
+    const eveContribution   = metrics?.eve_contribution  ?? 0;
     const mitigated = mitigationStatus === 'PA_ACTIVE' || mitigationStatus === 'E91_ACTIVE';
 
     let attackValue, secureValue, attackFill, effectiveThreat;
 
     if (mitigated) {
-      // Attack WAS detected (amber = neutralized threat) but system is secure
-      // Show a modest amber bar so the user knows an attack was caught & stopped
-      attackValue    = Math.min(confidenceScore * 25, 22); // cap at 22% max
+      // Use eve_contribution to drive the amber bar — it varies per model
+      // and per render, so switching models shows real differences.
+      // Scale: eve_contrib ~0.20-0.28 → bar ~24-34% (amber = neutralized)
+      attackValue    = Math.min(eveContribution * 120, 38);
       secureValue    = 100 - attackValue;
-      attackFill     = '#FF9500';                           // amber = neutralized
+      attackFill     = '#FF9500'; // amber = detected but neutralized
       effectiveThreat = 'LOW';
     } else {
-      // Raw ML detection: show each model's actual confidence difference
+      // Raw ML detection: show confidence difference clearly between models
       attackValue    = confidenceScore * 100;
       secureValue    = (1 - confidenceScore) * 100;
-      attackFill     = '#FF003C';                           // red = active threat
+      attackFill     = '#FF003C'; // red = active threat
       effectiveThreat = rawThreatLevel;
     }
 
@@ -72,7 +74,8 @@ const MLAnalysis = () => {
       isHighThreat: effectiveThreat.toUpperCase() === 'HIGH',
       isMitigated:  mitigated
     };
-  }, [metrics?.confidence_score, metrics?.threat_level, metrics?.mitigation_status]);
+  }, [metrics?.confidence_score, metrics?.threat_level, metrics?.mitigation_status, metrics?.eve_contribution]);
+
 
 
   return (
