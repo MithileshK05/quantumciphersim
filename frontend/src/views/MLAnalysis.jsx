@@ -46,13 +46,16 @@ const MLAnalysis = () => {
     let attackValue, secureValue, attackFill, effectiveThreat;
 
     if (mitigated) {
-      // Use eve_contribution to drive the amber bar — it varies per model
-      // and per render, so switching models shows real differences.
-      // Scale: eve_contrib ~0.20-0.28 → bar ~24-34% (amber = neutralized)
-      attackValue    = Math.min(eveContribution * 120, 38);
-      secureValue    = 100 - attackValue;
+      // Privacy Amplification (PA) mathematically eliminates Eve's key knowledge.
+      // After PA: the remaining key bits are effectively secure (~93-95%).
+      // Show a SMALL amber residual (~5-7%) = the detected+neutralized threat,
+      // and a LARGE cyan bar (~93-95%) = post-PA channel security.
+      // Scale: eve_contribution ~0.20-0.28 → amber bar ~5-7%
+      attackValue    = Math.max(eveContribution * 25, 4);  // 5-7% amber residual
+      secureValue    = 100 - attackValue;                   // 93-95% secure
       attackFill     = '#FF9500'; // amber = detected but neutralized
       effectiveThreat = 'LOW';
+
     } else {
       // Raw ML detection: show confidence difference clearly between models
       attackValue    = confidenceScore * 100;
