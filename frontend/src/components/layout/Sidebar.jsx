@@ -1,12 +1,13 @@
-import { Activity, Beaker, BrainCircuit, Library } from 'lucide-react';
+import { Activity, Beaker, BrainCircuit, Library, ScrollText } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 
 const Sidebar = () => {
   const links = [
-    { to: '/', name: 'Dashboard', icon: <Activity size={24} /> },
-    { to: '/sim', name: 'Simulation', icon: <Beaker size={24} /> },
-    { to: '/ml', name: 'ML Analysis', icon: <BrainCircuit size={24} /> },
+    { to: '/',        name: 'Dashboard', icon: <Activity size={24} /> },
+    { to: '/sim',     name: 'Simulation', icon: <Beaker size={24} /> },
+    { to: '/ml',      name: 'ML Analysis', icon: <BrainCircuit size={24} /> },
     { to: '/concepts', name: 'Concepts', icon: <Library size={24} /> },
+    { to: '/history', name: 'History', icon: <ScrollText size={24} /> },
   ];
 
   return (
