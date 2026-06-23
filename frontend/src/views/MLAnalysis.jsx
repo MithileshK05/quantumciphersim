@@ -123,7 +123,7 @@ const MLAnalysis = () => {
       
       {/* Header Area */}
       <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-3xl font-sans tracking-wide glow-cyan text-neon-cyan uppercase">Machine Learning Analysis</h1>
+        <h1 className="text-3xl font-sans tracking-wide glow-cyan text-neon-cyan uppercase">{isE91 ? 'Quantum Security Analysis' : 'Machine Learning Analysis'}</h1>
         <button 
           onClick={() => setIsAttacked(!isAttacked)}
           className={`px-6 py-2 rounded font-mono text-sm tracking-widest uppercase transition-all duration-300 font-bold border ${isAttacked ? 'bg-neon-red/20 text-neon-red border-neon-red glow-red' : 'bg-transparent text-[#64748B] border-[#1A2639] hover:border-neon-cyan hover:text-neon-cyan'}`}
@@ -331,7 +331,7 @@ const MLAnalysis = () => {
                 <div className="flex flex-col items-center justify-center p-5 bg-[#0B101A] border border-[#1A2639] rounded-lg min-w-[160px]">
                   <Link className="text-[#64748B] mb-3" size={20} />
                   <span className="text-[9px] text-[#64748B] font-sans uppercase tracking-[0.2em] mb-2 text-center">Corr. Measurement</span>
-                  <span className="text-xs font-mono text-white text-center">QBER: {metrics?.qber.toFixed(3)}<br/>3-basis sampling</span>
+                  <span className="text-xs font-mono text-white text-center">QBER: {(metrics?.qber ?? 0).toFixed(3)}<br/>3-basis sampling</span>
                 </div>
 
                 <ArrowRight className="text-[#334155] shrink-0" size={24} />
@@ -345,10 +345,16 @@ const MLAnalysis = () => {
                 <ArrowRight className="text-neon-cyan drop-shadow-[0_0_8px_rgba(0,240,255,0.6)] shrink-0" size={24} />
 
                 <div className={`flex flex-col items-center justify-center p-5 rounded-lg min-w-[160px] relative overflow-hidden transition-all duration-500 border-2 ${e91Metrics.isSecure ? 'bg-[#0B101A] border-neon-cyan shadow-[0_0_15px_rgba(0,240,255,0.2)]' : 'bg-neon-red border-[#FF003C] shadow-[0_0_25px_rgba(255,0,60,0.4)]'}`}>
-                  <ShieldCheck className="text-neon-cyan mb-2 relative z-10" size={28} />
-                  <span className="text-[9px] font-sans uppercase tracking-[0.2em] mb-1 text-neon-cyan/80 relative z-10">BELL VERDICT</span>
-                  <span className="text-sm font-mono font-bold tracking-widest text-neon-cyan relative z-10 text-center">
-                    {e91Metrics.isSecure ? 'ENTANGLEMENT\nVERIFIED' : 'BELL TEST\nFAILED'}
+                  {e91Metrics.isSecure
+                    ? <ShieldCheck className="text-neon-cyan mb-2 relative z-10" size={28} />
+                    : <ShieldAlert className="text-white mb-2 relative z-10" size={28} />
+                  }
+                  <span className={`text-[9px] font-sans uppercase tracking-[0.2em] mb-1 relative z-10 ${e91Metrics.isSecure ? 'text-neon-cyan/80' : 'text-white/80'}`}>BELL VERDICT</span>
+                  <span className={`text-sm font-mono font-bold tracking-widest relative z-10 text-center ${e91Metrics.isSecure ? 'text-neon-cyan' : 'text-white'}`}>
+                    {e91Metrics.isSecure
+                      ? <><span>ENTANGLEMENT</span><br/><span>VERIFIED</span></>
+                      : <><span>BELL TEST</span><br/><span>FAILED</span></>
+                    }
                   </span>
                 </div>
 
@@ -428,7 +434,7 @@ const MLAnalysis = () => {
               <div className="flex flex-col items-center justify-center p-5 bg-[#0B101A] border border-[#1A2639] rounded-lg min-w-[180px]">
                 <Database className="text-[#64748B] mb-3" size={20} />
                 <span className="text-[9px] text-[#64748B] font-sans uppercase tracking-[0.2em] mb-2 text-center">Observable Extraction</span>
-                <span className="text-xs font-mono text-white text-center">QBER: {metrics?.qber.toFixed(3)}<br/>Noise: {metrics?.noise_level.toFixed(3)}</span>
+                <span className="text-xs font-mono text-white text-center">QBER: {(metrics?.qber ?? 0).toFixed(3)}<br/>Noise: {(metrics?.noise_level ?? 0).toFixed(3)}</span>
               </div>
               <ArrowRight className="text-[#334155] shrink-0" size={24} />
               <div className="flex flex-col items-center justify-center p-5 bg-[#0A0E17] border border-neon-cyan/30 shadow-[0_0_10px_rgba(0,240,255,0.1)] rounded-lg min-w-[200px]">
