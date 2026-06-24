@@ -3,6 +3,7 @@ services:
     name: quantumciphersim-api
     runtime: python
     rootDir: .
+    pythonVersion: "3.11.9"
     buildCommand: pip install -r requirements.txt
     startCommand: python -m uvicorn backend.main:app --host 0.0.0.0 --port $PORT
     plan: free
@@ -13,8 +14,6 @@ services:
         fromDatabase:
           name: quantumciphersim-db
           property: connectionString
-      - key: PYTHON_VERSION
-        value: 3.11.0
 
 databases:
   - name: quantumciphersim-db
