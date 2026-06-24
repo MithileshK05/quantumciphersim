@@ -78,3 +78,43 @@ def get_history(
         runs  = [HistoryRow(**r.to_dict()) for r in rows],
         total = total,
     )
+
+
+@router.get("/history/test-write")
+def test_write():
+    """
+    Diagnostic endpoint: attempts a real DB INSERT and returns the result.
+    Returns {"ok": true, "session_id": "..."} on success.
+    Returns {"ok": false, "error": "<exception text>"} on failure.
+    This bypasses all silent try/except so we can see the real error.
+    Remove this endpoint once history recording is confirmed working.
+    """
+    from backend.database import SessionLocal
+    db = SessionLocal()
+    try:
+        run = SimulationRun(
+            noise_level           = 0.05,
+            attack_probability    = 1.0,
+            final_qber            = 0.2500,
+            sifted_key_length     = 0,
+            eve_qber_contribution = 0.22,
+            ml_prediction         = "HIGH",
+            confidence_score      = 0.99,
+            model_used            = "test_write",
+            actual_attack_status  = True,
+        )
+        db.add(run)
+        db.commit()
+        db.refresh(run)
+        session_id = run.session_id
+        return {"ok": True, "session_id": session_id,
+                "message": "Row inserted successfully"}
+    except Exception as exc:
+        try:
+            db.rollback()
+        except Exception:
+            pass
+        return {"ok": False, "error": str(exc),
+                "error_type": type(exc).__name__}
+    finally:
+        db.close()
