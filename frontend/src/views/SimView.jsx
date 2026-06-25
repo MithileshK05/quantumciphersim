@@ -4,6 +4,7 @@ import { useHistoryRecorder } from '../hooks/useHistoryRecorder';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { QuantumChannel } from '../components/3d/QuantumChannel';
 import { useSimulation } from '../context/SimulationContext';
+import { AlertTriangle, RefreshCw, Server, WifiOff } from 'lucide-react';
 
 const SimView = () => {
   // ── State Setup ──────────────────────────────────────────────────────────
@@ -18,7 +19,7 @@ const SimView = () => {
   const [dataStream, setDataStream] = useState([]);
 
   // Hook with structuralSharing:false — always triggers re-render on every poll
-  const { data: metrics, isLoading } = useQKDMetrics(
+  const { data: metrics, isLoading, isError, refetch } = useQKDMetrics(
     noiseLevel,
     isAttacked ? 1.0 : 0.0,
     'gradient_boosting',
@@ -82,10 +83,10 @@ const SimView = () => {
   }, [metrics?.status, metrics?.threat_level, metrics?.mitigation_status]);
 
   return (
-    <div className="flex flex-row h-full w-full bg-transparent gap-6 p-4 animate-in fade-in duration-500">
+    <div className="flex flex-col lg:flex-row h-full w-full bg-transparent gap-6 p-4 animate-in fade-in duration-500 overflow-y-auto custom-scrollbar">
 
       {/* 1. Left Column: Simulation Controls & Defense Measures */}
-      <div className="w-1/4 flex flex-col gap-6">
+      <div className="w-full lg:w-1/4 flex flex-col gap-6 shrink-0">
         <div className="glass-panel rounded-xl border-quantum-border p-6 flex flex-col h-full relative overflow-hidden">
           {/* Top right corner decorative accent */}
           <div className="absolute top-0 right-0 w-24 h-24 bg-neon-cyan/5 rounded-bl-[100px]" />
@@ -163,88 +164,111 @@ const SimView = () => {
       </div>
 
       {/* 2. Right Column (Metrics & Telemetry) */}
-      <div className="w-3/4 flex flex-col gap-6 h-full overflow-y-auto pb-8 pr-2 custom-scrollbar">
+      <div className="w-full lg:w-3/4 flex flex-col gap-6 h-full overflow-y-auto pb-8 lg:pr-2 custom-scrollbar">
 
-        {/* Hero Metrics */}
-        <div className="grid grid-cols-3 gap-6 w-full shrink-0">
-          <div className={`glass-panel p-6 rounded-xl border-quantum-border flex flex-col items-center justify-center transition-all duration-500 ${isCompromised ? 'glow-red' : isMitigating ? 'glow-purple border-neon-purple/50' : ''}`}>
-            <span className="text-text-muted text-xs font-bold uppercase tracking-widest mb-3 font-sans">QUANTUM BIT ERROR RATE</span>
-            <span className={`text-5xl font-mono font-bold transition-colors duration-500 ${isCompromised ? 'text-neon-red' : isMitigating ? 'text-neon-purple' : 'text-text-main'}`}>
-              {currentQBER}%
-            </span>
+        {isError ? (
+          <div className="glass-panel rounded-xl border border-neon-red/40 bg-red-950/20 p-10 flex flex-col items-center justify-center min-h-[450px] text-center shadow-[0_0_30px_rgba(255,0,60,0.15)] relative overflow-hidden my-auto">
+            <div className="absolute top-0 left-0 w-full h-1 bg-neon-red shadow-[0_0_15px_#FF003C]" />
+            <div className="p-6 bg-neon-red/10 rounded-full mb-6 border border-neon-red/30 animate-pulse">
+              <WifiOff className="text-neon-red" size={48} />
+            </div>
+            <h2 className="text-2xl font-sans font-bold text-white tracking-wider uppercase mb-2">Quantum Telemetry Link Severed</h2>
+            <p className="text-neon-red font-mono text-sm tracking-widest uppercase mb-6">FastAPI Backend Unreachable / Initializing</p>
+            <p className="text-[#94A3B8] font-mono text-xs max-w-md leading-relaxed mb-8">
+              The secure quantum channel simulation server on Render is currently waking up from standby or experiencing connectivity issues. Please allow 30–60 seconds for the optical routing matrix to align.
+            </p>
+            <button
+              onClick={() => refetch()}
+              className="flex items-center gap-3 px-8 py-3 rounded-lg font-mono text-xs tracking-widest uppercase bg-neon-red text-white font-bold shadow-[0_0_20px_rgba(255,0,60,0.5)] hover:bg-red-600 transition-all duration-300"
+            >
+              <RefreshCw size={14} className="animate-spin" />
+              Re-establish Connection
+            </button>
           </div>
-
-          <div className="glass-panel p-6 rounded-xl border-quantum-border flex flex-col items-center justify-center">
-            <span className="text-text-muted text-xs font-bold uppercase tracking-widest mb-3 font-sans">SECURE KEY RATE</span>
-            <span className={`text-5xl font-mono font-bold transition-colors ${isMitigating && metrics?.active_protocol === 'BB84' ? 'text-neon-purple pulse-slow' : 'text-neon-cyan'}`}>
-              {currentKeyRate} <span className="text-xl">kb/s</span>
-            </span>
-          </div>
-
-          <div className={`glass-panel p-6 rounded-xl border-quantum-border flex flex-col items-center justify-center transition-all duration-500 ${isCompromised ? 'glow-red' : isMitigating ? 'glow-purple shadow-[0_0_20px_#B026FF22]' : ''}`}>
-            <span className="text-text-muted text-xs font-bold uppercase tracking-widest mb-3 font-sans">NETWORK STATUS</span>
-            <span className={`text-3xl font-mono font-bold uppercase tracking-widest text-center transition-colors duration-500 ${isCompromised ? 'text-neon-red animate-pulse' : isMitigating ? 'text-neon-purple animate-pulse' : 'text-neon-cyan glow-cyan'}`}>
-              {currentStatus}
-            </span>
-          </div>
-        </div>
-
-        {/* Telemetry Chart */}
-        <div className="glass-panel rounded-xl border-quantum-border w-full shrink-0 flex flex-col p-6 relative" style={{ height: '360px' }}>
-          <h3 className="text-neon-cyan text-sm uppercase tracking-widest font-sans mb-4 glow-cyan w-max">LIVE TELEMETRY STREAM</h3>
-          <div style={{ width: '100%', height: '280px' }}>
-            {isLoading && dataStream.length === 0 ? (
-              <div className="flex h-full items-center justify-center">
-                <p className="text-neon-cyan animate-pulse font-mono tracking-widest glow-cyan text-lg">CALIBRATING QUANTUM CHANNEL...</p>
+        ) : (
+          <>
+            {/* Hero Metrics */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full shrink-0">
+              <div className={`glass-panel p-6 rounded-xl border-quantum-border flex flex-col items-center justify-center transition-all duration-500 ${isCompromised ? 'glow-red' : isMitigating ? 'glow-purple border-neon-purple/50' : ''}`}>
+                <span className="text-text-muted text-xs font-bold uppercase tracking-widest mb-3 font-sans">QUANTUM BIT ERROR RATE</span>
+                <span className={`text-4xl lg:text-5xl font-mono font-bold transition-colors duration-500 ${isCompromised ? 'text-neon-red' : isMitigating ? 'text-neon-purple' : 'text-text-main'}`}>
+                  {currentQBER}%
+                </span>
               </div>
-            ) : (
-              <ResponsiveContainer width="100%" height={280}>
-                <LineChart data={dataStream} margin={{ top: 10, right: 30, bottom: 0, left: 0 }}>
-                  <CartesianGrid vertical={false} stroke="#1A2639" strokeDasharray="3 3" />
-                  <XAxis dataKey="time" tick={false} axisLine={{ stroke: '#1A2639' }} />
-                  {/* PATCH v2: auto-scale Y axis so values are readable at all states */}
-                  <YAxis
-                    type="number"
-                    domain={['auto', 'auto']}
-                    stroke="#1A2639"
-                    tick={{ fill: '#64748B', fontFamily: 'JetBrains Mono', fontSize: 11 }}
-                    width={40}
-                  />
-                  <Tooltip
-                    cursor={{ stroke: '#00F0FF', strokeWidth: 1 }}
-                    contentStyle={{ backgroundColor: '#0B101A', borderColor: '#00F0FF44', borderRadius: '8px', fontFamily: 'JetBrains Mono', fontSize: '11px' }}
-                    formatter={(value, name) => [
-                      name === 'QBER (%)' ? `${value}%` : `${value} kb/s`,
-                      name
-                    ]}
-                  />
-                  <Legend
-                    verticalAlign="top"
-                    align="right"
-                    wrapperStyle={{ fontSize: '10px', fontFamily: 'JetBrains Mono', paddingBottom: '8px' }}
-                    formatter={(value) => <span style={{ color: value === 'QBER (%)' ? '#B026FF' : '#00F0FF' }}>{value}</span>}
-                  />
-                  <Line name="QBER (%)" type="basis" dataKey="qber" stroke="#B026FF" strokeWidth={2.5} dot={false} isAnimationActive={false} strokeLinecap="round" strokeLinejoin="round" />
-                  <Line name="Key Rate (×10 kb/s)" type="basis" dataKey="key_rate" stroke="#00F0FF" strokeWidth={3} dot={false} isAnimationActive={false} strokeLinecap="round" strokeLinejoin="round" />
-                </LineChart>
-              </ResponsiveContainer>
-            )}
-          </div>
-        </div>
 
-        {/* 3D Physical Visualizer */}
-        <div className="glass-panel rounded-xl border-quantum-border w-full shrink-0 flex flex-col p-6 gap-4 relative overflow-hidden" style={{ height: '440px' }}>
-          <h3 className="text-text-muted text-xs uppercase tracking-[0.2em] font-sans">QUANTUM CHANNEL LINK</h3>
-          <div style={{ width: '100%', height: '380px' }}>
-            <QuantumChannel
-              noiseLevel={noiseLevel}
-              isCompromised={isCompromised}
-              isAttacked={isAttacked}
-              mitigationStatus={metrics?.mitigation_status ?? 'NONE'}
-              activeProtocol={activeProtocol}
-            />
-          </div>
-        </div>
+              <div className="glass-panel p-6 rounded-xl border-quantum-border flex flex-col items-center justify-center">
+                <span className="text-text-muted text-xs font-bold uppercase tracking-widest mb-3 font-sans">SECURE KEY RATE</span>
+                <span className={`text-4xl lg:text-5xl font-mono font-bold transition-colors ${isMitigating && metrics?.active_protocol === 'BB84' ? 'text-neon-purple pulse-slow' : 'text-neon-cyan'}`}>
+                  {currentKeyRate} <span className="text-lg lg:text-xl">kb/s</span>
+                </span>
+              </div>
+
+              <div className={`glass-panel p-6 rounded-xl border-quantum-border flex flex-col items-center justify-center transition-all duration-500 ${isCompromised ? 'glow-red' : isMitigating ? 'glow-purple shadow-[0_0_20px_#B026FF22]' : ''}`}>
+                <span className="text-text-muted text-xs font-bold uppercase tracking-widest mb-3 font-sans">NETWORK STATUS</span>
+                <span className={`text-2xl lg:text-3xl font-mono font-bold uppercase tracking-widest text-center transition-colors duration-500 ${isCompromised ? 'text-neon-red animate-pulse' : isMitigating ? 'text-neon-purple animate-pulse' : 'text-neon-cyan glow-cyan'}`}>
+                  {currentStatus}
+                </span>
+              </div>
+            </div>
+
+            {/* Telemetry Chart */}
+            <div className="glass-panel rounded-xl border-quantum-border w-full shrink-0 flex flex-col p-6 relative min-h-[360px]">
+              <h3 className="text-neon-cyan text-sm uppercase tracking-widest font-sans mb-4 glow-cyan w-max">LIVE TELEMETRY STREAM</h3>
+              <div className="w-full h-[280px]">
+                {isLoading && dataStream.length === 0 ? (
+                  <div className="flex h-full items-center justify-center">
+                    <p className="text-neon-cyan animate-pulse font-mono tracking-widest glow-cyan text-base lg:text-lg">CALIBRATING QUANTUM CHANNEL...</p>
+                  </div>
+                ) : (
+                  <ResponsiveContainer width="100%" height={280}>
+                    <LineChart data={dataStream} margin={{ top: 10, right: 30, bottom: 0, left: 0 }}>
+                      <CartesianGrid vertical={false} stroke="#1A2639" strokeDasharray="3 3" />
+                      <XAxis dataKey="time" tick={false} axisLine={{ stroke: '#1A2639' }} />
+                      {/* PATCH v2: auto-scale Y axis so values are readable at all states */}
+                      <YAxis
+                        type="number"
+                        domain={['auto', 'auto']}
+                        stroke="#1A2639"
+                        tick={{ fill: '#64748B', fontFamily: 'JetBrains Mono', fontSize: 11 }}
+                        width={40}
+                      />
+                      <Tooltip
+                        cursor={{ stroke: '#00F0FF', strokeWidth: 1 }}
+                        contentStyle={{ backgroundColor: '#0B101A', borderColor: '#00F0FF44', borderRadius: '8px', fontFamily: 'JetBrains Mono', fontSize: '11px' }}
+                        formatter={(value, name) => [
+                          name === 'QBER (%)' ? `${value}%` : `${value} kb/s`,
+                          name
+                        ]}
+                      />
+                      <Legend
+                        verticalAlign="top"
+                        align="right"
+                        wrapperStyle={{ fontSize: '10px', fontFamily: 'JetBrains Mono', paddingBottom: '8px' }}
+                        formatter={(value) => <span style={{ color: value === 'QBER (%)' ? '#B026FF' : '#00F0FF' }}>{value}</span>}
+                      />
+                      <Line name="QBER (%)" type="basis" dataKey="qber" stroke="#B026FF" strokeWidth={2.5} dot={false} isAnimationActive={false} strokeLinecap="round" strokeLinejoin="round" />
+                      <Line name="Key Rate (×10 kb/s)" type="basis" dataKey="key_rate" stroke="#00F0FF" strokeWidth={3} dot={false} isAnimationActive={false} strokeLinecap="round" strokeLinejoin="round" />
+                    </LineChart>
+                  </ResponsiveContainer>
+                )}
+              </div>
+            </div>
+
+            {/* 3D Physical Visualizer */}
+            <div className="glass-panel rounded-xl border-quantum-border w-full shrink-0 flex flex-col p-6 gap-4 relative overflow-hidden min-h-[440px]">
+              <h3 className="text-text-muted text-xs uppercase tracking-[0.2em] font-sans">QUANTUM CHANNEL LINK</h3>
+              <div className="w-full h-[380px]">
+                <QuantumChannel
+                  noiseLevel={noiseLevel}
+                  isCompromised={isCompromised}
+                  isAttacked={isAttacked}
+                  mitigationStatus={metrics?.mitigation_status ?? 'NONE'}
+                  activeProtocol={activeProtocol}
+                />
+              </div>
+            </div>
+          </>
+        )}
 
       </div>
     </div>

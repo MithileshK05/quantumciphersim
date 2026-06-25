@@ -1,18 +1,48 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useQKDMetrics } from '../hooks/useQKDMetrics';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { ArrowRight, Database, Cpu, Activity, ShieldAlert, ShieldCheck, Atom, Zap, GitMerge, Link } from 'lucide-react';
 import { useSimulation } from '../context/SimulationContext';
+import axios from 'axios';
 
-const modelsConfig = [
-  { id: 'gradient_boosting', name: 'Gradient Boosting', acc: 0.9376, prec: 0.9536, rec: 0.9574, f1: 0.9555 },
-  { id: 'random_forest', name: 'Random Forest', acc: 0.9351, prec: 0.9580, rec: 0.9488, f1: 0.9534 },
-  { id: 'logistic_regression', name: 'Logistic Regression', acc: 0.9306, prec: 0.9755, rec: 0.9240, f1: 0.9491 },
-  { id: 'svm', name: 'Support Vector Machine', acc: 0.9278, prec: 0.9772, rec: 0.9183, f1: 0.9468 }
+const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+
+const initialModelsConfig = [
+  { id: 'gradient_boosting', name: 'Gradient Boosting', acc: 1.0000, prec: 1.0000, rec: 1.0000, f1: 1.0000 },
+  { id: 'random_forest', name: 'Random Forest', acc: 1.0000, prec: 1.0000, rec: 1.0000, f1: 1.0000 },
+  { id: 'logistic_regression', name: 'Logistic Regression', acc: 0.9981, prec: 0.9989, rec: 0.9972, f1: 0.9980 },
+  { id: 'svm', name: 'Support Vector Machine', acc: 0.9979, prec: 0.9987, rec: 0.9971, f1: 0.9979 }
 ];
 
 const MLAnalysis = () => {
   const [selectedModelId, setSelectedModelId] = useState('gradient_boosting');
+  const [modelsData, setModelsData] = useState(initialModelsConfig);
+
+  useEffect(() => {
+    const fetchModels = async () => {
+      try {
+        const res = await axios.get(`${BASE_URL}/models`);
+        if (res.data && res.data.models) {
+          const updated = initialModelsConfig.map(mc => {
+            const found = res.data.models.find(m => m.model_type === mc.id);
+            if (found) {
+              const acc = found.accuracy;
+              const rec = found.recall_attack ?? acc;
+              const prec = found.precision ?? acc;
+              const f1 = (2 * prec * rec) / (prec + rec || 1);
+              return { ...mc, acc, prec, rec, f1 };
+            }
+            return mc;
+          });
+          setModelsData(updated);
+        }
+      } catch (err) {
+        console.error("Failed to fetch models from backend:", err);
+      }
+    };
+    fetchModels();
+  }, []);
+
   const { 
     isAttacked, setIsAttacked,
     noiseLevel,
@@ -29,7 +59,7 @@ const MLAnalysis = () => {
     activeProtocol
   );
 
-  const selectedModel = modelsConfig.find(m => m.id === selectedModelId);
+  const selectedModel = modelsData.find(m => m.id === selectedModelId) || modelsData[0];
   const isE91 = activeProtocol === 'E91';
 
   // E91-specific Bell inequality metrics derived from live backend QBER
@@ -206,7 +236,7 @@ const MLAnalysis = () => {
                   onChange={(e) => setSelectedModelId(e.target.value)}
                   className="w-full bg-[#0B101A] border border-[#1A2639] text-text-main p-3 rounded font-mono text-sm focus:outline-none focus:border-neon-cyan focus:ring-1 focus:ring-neon-cyan transition-colors"
                 >
-                  {modelsConfig.map(model => (
+                  {modelsData.map(model => (
                     <option key={model.id} value={model.id}>{model.name}</option>
                   ))}
                 </select>

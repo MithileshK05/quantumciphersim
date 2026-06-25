@@ -384,14 +384,16 @@ const QuantumScene = React.memo(({ noiseLevel, isCompromised, isAttacked, mitiga
 // ── Exported QuantumChannel Wrapper ────────────────────────────────────────
 export const QuantumChannel = React.memo(({ noiseLevel, isCompromised, isAttacked, mitigationStatus, activeProtocol }) => {
   return (
-    <div className="w-full h-full bg-[#020306] rounded-xl border border-quantum-border overflow-hidden">
+    <div className="w-full h-full bg-[#020306] rounded-xl border border-quantum-border overflow-hidden relative">
       <Canvas
         shadows={false}
-        camera={{ position: [0, 7, 24], fov: 38 }}
+        camera={{ position: [0, 7, 24], fov: typeof window !== 'undefined' && window.innerWidth < 768 ? 48 : 38 }}
+        style={{ width: '100%', height: '100%', touchAction: 'none' }}
         gl={{
-          antialias: false,
+          antialias: true,
           powerPreference: 'high-performance',
           alpha: false,
+          preserveDrawingBuffer: true,
         }}
         onCreated={({ gl }) => {
           gl.setClearColor('#020306', 1);

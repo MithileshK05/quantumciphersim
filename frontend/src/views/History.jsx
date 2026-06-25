@@ -12,6 +12,13 @@ import {
 
 const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
+// Ensure timestamps are treated as UTC so browser correctly converts to local timezone (IST)
+const parseUtcDate = (ts) => {
+  if (!ts) return new Date();
+  const isoStr = ts.includes('T') ? ts : ts.replace(' ', 'T');
+  return new Date(isoStr.endsWith('Z') ? isoStr : isoStr + 'Z');
+};
+
 // ── Data fetching ─────────────────────────────────────────────────────────────
 const fetchHistory = async (limit) => {
   const res = await axios.get(`${BASE_URL}/history`, { params: { limit } });
@@ -103,10 +110,10 @@ const History = () => {
   const chartData = useMemo(() =>
     [...runs]
       .filter(r => r.final_qber != null && r.timestamp)
-      .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp))
+      .sort((a, b) => parseUtcDate(a.timestamp) - parseUtcDate(b.timestamp))
       .map(r => ({
         ...r,
-        time: new Date(r.timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+        time: parseUtcDate(r.timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
         qberPct: +(r.final_qber * 100).toFixed(3),
       })),
   [runs]);
@@ -293,7 +300,7 @@ const History = () => {
                           {/* Timestamp */}
                           <td className="px-4 py-3 text-[#64748B] whitespace-nowrap">
                             {row.timestamp
-                              ? new Date(row.timestamp).toLocaleString('en-US', {
+                              ? parseUtcDate(row.timestamp).toLocaleString('en-US', {
                                   month: 'short', day: 'numeric',
                                   hour: '2-digit', minute: '2-digit', second: '2-digit'
                                 })

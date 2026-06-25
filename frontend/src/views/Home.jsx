@@ -61,7 +61,11 @@ const Home = () => {
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[80%] h-[80%] bg-[#00F0FF]/5 rounded-full blur-[150px] pointer-events-none" />
       
       {/* 3D React Three Fiber Canvas */}
-      <Canvas camera={{ position: [0, 0, 16], fov: 45 }}>
+      <Canvas 
+        camera={{ position: [0, 0, 16], fov: typeof window !== 'undefined' && window.innerWidth < 768 ? 55 : 45 }}
+        style={{ width: '100%', height: '100%', touchAction: 'none' }}
+        gl={{ antialias: true, powerPreference: 'high-performance', alpha: false, preserveDrawingBuffer: true }}
+      >
         <color attach="background" args={['#030508']} />
         
         <ambientLight intensity={0.5} />
