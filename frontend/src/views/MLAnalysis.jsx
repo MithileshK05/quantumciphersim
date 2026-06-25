@@ -78,26 +78,38 @@ const MLAnalysis = () => {
 
   // E91 bar chart data: how strongly the Bell inequality is violated vs classical limit
   const e91BarData = React.useMemo(() => {
+    const mitigationStatus  = metrics?.mitigation_status || 'NONE';
+    const mitigated = autoMitigate || mitigationStatus === 'E91_ACTIVE' || mitigationStatus === 'PA_ACTIVE';
+
     if (isAttacked) {
-      // During active interception, entanglement breaks and collapses into classical correlation limits
-      const riskValue = 98.5 + (metrics?.qber ?? 0) * 10;
-      return [
-        { name: 'Classical Limit Risk', value: Math.min(99.9, riskValue), fill: '#FF003C' },
-        { name: 'Quantum Bell Violation', value: Math.max(0.1, 100 - Math.min(99.9, riskValue)), fill: '#00F0FF' }
-      ];
+      if (mitigated) {
+        // When attack is ON but auto-mitigation is ON, E91 quantum entanglement shielding
+        // successfully secures the stream (ENTANGLEMENT VERIFIED / QUANTUM SECURE).
+        return [
+          { name: 'Classical Limit Risk', value: Math.max(0, 100 - e91Metrics.bellViolation), fill: '#334155' },
+          { name: 'Quantum Bell Violation', value: e91Metrics.bellViolation, fill: '#00F0FF' }
+        ];
+      } else {
+        // When attack is ON and auto-mitigation is OFF, unmitigated interception breaks entanglement.
+        const riskValue = 98.5 + (metrics?.qber ?? 0) * 10;
+        return [
+          { name: 'Classical Limit Risk', value: Math.min(99.9, riskValue), fill: '#FF003C' },
+          { name: 'Quantum Bell Violation', value: Math.max(0.1, 100 - Math.min(99.9, riskValue)), fill: '#00F0FF' }
+        ];
+      }
     } else {
       return [
         { name: 'Classical Limit Risk', value: Math.max(0, 100 - e91Metrics.bellViolation), fill: '#334155' },
         { name: 'Quantum Bell Violation', value: e91Metrics.bellViolation, fill: '#00F0FF' }
       ];
     }
-  }, [e91Metrics.bellViolation, isAttacked, metrics?.qber]);
+  }, [e91Metrics.bellViolation, isAttacked, autoMitigate, metrics?.mitigation_status, metrics?.qber]);
 
   // Derived threat data for BarChart — updated to perfectly reflect model accuracy and live metrics
   const { threatData, threatLevel, isHighThreat, isMitigated } = React.useMemo(() => {
     const rawThreatLevel    = metrics?.threat_level      || (isAttacked ? 'HIGH' : 'LOW');
     const mitigationStatus  = metrics?.mitigation_status || 'NONE';
-    const mitigated = mitigationStatus === 'PA_ACTIVE' || mitigationStatus === 'E91_ACTIVE';
+    const mitigated = autoMitigate || mitigationStatus === 'PA_ACTIVE' || mitigationStatus === 'E91_ACTIVE';
     const modelAcc = selectedModel?.acc ?? 1.0;
 
     let attackValue, secureValue, attackFill;
@@ -135,7 +147,7 @@ const MLAnalysis = () => {
       isHighThreat: isAttacked && !mitigated,
       isMitigated:  mitigated
     };
-  }, [metrics?.threat_level, metrics?.mitigation_status, isAttacked, selectedModel?.acc]);
+  }, [metrics?.threat_level, metrics?.mitigation_status, isAttacked, autoMitigate, selectedModel?.acc]);
 
 
 
