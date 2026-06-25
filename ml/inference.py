@@ -73,40 +73,96 @@ def _load_feature_names() -> list:
 
 
 # ---------------------------------------------------------------------------
+# Auto-retrain helper: runs when any model fails to load
+# ---------------------------------------------------------------------------
+
+def _auto_retrain() -> None:
+    """
+    Triggered automatically when any model file is missing or fails to load
+    (e.g. scikit-learn / numpy pickle version mismatch across environments).
+    Runs generate_dataset.py then train_model.py in-process using the same
+    Python interpreter and installed packages as the running server.
+    """
+    import subprocess
+    import sys
+
+    _ROOT = os.path.dirname(_ML_DIR)
+    print("[inference] Auto-retrain triggered: regenerating dataset and models...")
+
+    gen_script   = os.path.join(_ML_DIR, "generate_dataset.py")
+    train_script = os.path.join(_ML_DIR, "train_model.py")
+
+    print("[inference] Step 1/2: python ml/generate_dataset.py ...")
+    r1 = subprocess.run([sys.executable, gen_script], capture_output=False)
+    if r1.returncode != 0:
+        raise RuntimeError(
+            f"[inference] Dataset generation failed with exit code {r1.returncode}"
+        )
+
+    print("[inference] Step 2/2: python ml/train_model.py ...")
+    r2 = subprocess.run([sys.executable, train_script], capture_output=False)
+    if r2.returncode != 0:
+        raise RuntimeError(
+            f"[inference] Model training failed with exit code {r2.returncode}"
+        )
+
+    print("[inference] Auto-retrain complete — fresh models ready.")
+
+
+# ---------------------------------------------------------------------------
 # Load all models into memory at import time (once per process)
 # ---------------------------------------------------------------------------
 
 def _load_all_models(registry: dict) -> dict:
     """
     Load every model listed in the registry from disk into RAM.
-    Fails fast with a clear message if any file is missing.
+    On any load failure (missing file or pickle version mismatch),
+    automatically retrains all models using the current environment's
+    scikit-learn / numpy, then loads the freshly serialized files.
 
     Returns
     -------
     dict { model_type: fitted_estimator }
     """
-    store = {}
-    for model_type, info in registry.items():
-        if model_type.startswith("_"):
-            continue   # skip _best, _features meta-keys
-        filepath = os.path.join(_ML_DIR, info["file"])
-        if not os.path.exists(filepath):
-            raise FileNotFoundError(
-                f"[inference] Model file missing: {filepath}\n"
-                f"  -> Run 'python ml/train_model.py' to regenerate."
-            )
-        store[model_type] = joblib.load(filepath)
-    return store
+    def _attempt_load(reg: dict) -> dict:
+        store = {}
+        for model_type, info in reg.items():
+            if model_type.startswith("_"):
+                continue
+            filepath = os.path.join(_ML_DIR, info["file"])
+            if not os.path.exists(filepath):
+                raise FileNotFoundError(f"Model file missing: {filepath}")
+            store[model_type] = joblib.load(filepath)
+        return store
+
+    # First attempt: load pre-built models
+    try:
+        return _attempt_load(registry)
+    except Exception as exc:
+        print(f"[inference] Model load failed ({type(exc).__name__}: {exc})")
+        print("[inference] This is usually a scikit-learn/numpy version mismatch.")
+
+    # Auto-retrain: build fresh models in the current environment
+    _auto_retrain()
+
+    # Reload registry (train_model.py rewrites it) and load fresh models
+    with open(_REGISTRY_PATH) as f:
+        fresh_registry = json.load(f)
+
+    return _attempt_load(fresh_registry)
 
 
 # Module-level singletons (loaded once when FastAPI imports this module)
 _REGISTRY      = _load_registry()
 _FEATURE_NAMES = _load_feature_names()
 _MODEL_STORE   = _load_all_models(_REGISTRY)
+# Reload registry in case auto-retrain refreshed it
+_REGISTRY      = _load_registry()
 _DEFAULT_MODEL = _REGISTRY.get("_best", "gradient_boosting")
 
 # Public constant: list of valid model type strings
 AVAILABLE_MODELS: list = [k for k in _REGISTRY if not k.startswith("_")]
+
 
 
 # ---------------------------------------------------------------------------
