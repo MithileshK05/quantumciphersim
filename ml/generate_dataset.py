@@ -98,7 +98,7 @@ def generate_dataset(
     rng = np.random.default_rng(seed)
 
     # Sample parameters
-    num_qubits         = rng.integers(100, 2001, size=n_rows)
+    num_qubits         = rng.integers(1500, 5001, size=n_rows)
     noise_level        = rng.uniform(0.0, 0.15, size=n_rows)
     attack_probability = rng.uniform(0.0, 1.0,  size=n_rows)
 
@@ -113,8 +113,8 @@ def generate_dataset(
     noise_baseline        = (2.0 / 3.0) * noise_level
     eve_qber_contribution = np.maximum(0.0, qber - noise_baseline)
 
-    # Labels
-    label = (attack_probability >= ATTACK_THRESHOLD).astype(int)
+    # Labels (Channel compromised if Eve's observed QBER contribution >= 0.075)
+    label = (eve_qber_contribution >= 0.075).astype(int)
 
     # Build DataFrame
     df = pd.DataFrame({

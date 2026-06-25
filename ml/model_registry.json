@@ -1,33 +1,33 @@
 {
   "random_forest": {
     "file": "model_random_forest.joblib",
-    "accuracy": 0.9351,
-    "recall_attack": 0.948894,
-    "roc_auc": 0.984879,
+    "accuracy": 1.0,
+    "recall_attack": 1.0,
+    "roc_auc": 1.0,
     "description": "Ensemble of decision trees. Robust and interpretable."
   },
   "gradient_boosting": {
     "file": "model_gradient_boosting.joblib",
-    "accuracy": 0.9376,
-    "recall_attack": 0.957459,
-    "roc_auc": 0.986047,
+    "accuracy": 1.0,
+    "recall_attack": 1.0,
+    "roc_auc": 1.0,
     "description": "Boosted trees. Highest accuracy on tabular data."
   },
   "logistic_regression": {
     "file": "model_logistic_regression.joblib",
-    "accuracy": 0.9306,
-    "recall_attack": 0.924054,
-    "roc_auc": 0.984202,
+    "accuracy": 0.9981,
+    "recall_attack": 0.997224,
+    "roc_auc": 1.0,
     "description": "Linear model. Fastest inference, best probability calibration."
   },
   "svm": {
     "file": "model_svm.joblib",
-    "accuracy": 0.9278,
-    "recall_attack": 0.918344,
-    "roc_auc": 0.979977,
+    "accuracy": 0.9979,
+    "recall_attack": 0.997078,
+    "roc_auc": 0.999998,
     "description": "Kernel-based max-margin classifier. Excellent on clean boundaries."
   },
-  "_best": "gradient_boosting",
+  "_best": "random_forest",
   "_features": [
     "qber",
     "noise_level",

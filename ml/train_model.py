@@ -77,9 +77,9 @@ FEATURE_COLS = [
 TARGET_COL = "label"
 
 # Raised acceptance thresholds for v2
-MIN_ACCURACY = 0.92
-MIN_RECALL   = 0.88
-MIN_ROC_AUC  = 0.97
+MIN_ACCURACY = 0.98
+MIN_RECALL   = 0.98
+MIN_ROC_AUC  = 0.98
 
 RANDOM_SEED  = 42
 

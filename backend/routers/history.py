@@ -1,9 +1,11 @@
 """
 backend/routers/history.py
 ==========================
-GET /history  — returns recent simulation runs from DB
-GET /models   — returns model registry for frontend dropdown
-GET /health   — returns app health status
+GET  /history         — returns recent simulation runs from DB
+POST /history/record  — frontend calls this every ~10s to persist a snapshot
+GET  /history/test-write — diagnostic: attempts a DB insert, returns exact result
+GET  /models          — returns model registry for frontend dropdown
+GET  /health          — returns app health status
 """
 
 import sys
@@ -11,6 +13,8 @@ import os
 
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
+from pydantic import BaseModel
+from typing import Optional
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(
     os.path.abspath(__file__)
@@ -29,6 +33,19 @@ router = APIRouter(tags=["utility"])
 APP_VERSION = "1.0.0"
 
 
+# ── Pydantic schema for /history/record body ─────────────────────────────────
+class RecordPayload(BaseModel):
+    noise_level:           Optional[float] = None
+    attack_probability:    Optional[float] = None
+    final_qber:            Optional[float] = None
+    sifted_key_length:     Optional[int]   = None
+    eve_qber_contribution: Optional[float] = None
+    ml_prediction:         Optional[str]   = None
+    confidence_score:      Optional[float] = None
+    model_used:            Optional[str]   = None
+    actual_attack_status:  Optional[bool]  = None
+
+
 @router.get("/health", response_model=HealthResponse)
 def health_check(db: Session = Depends(get_db)):
     """
@@ -41,6 +58,44 @@ def health_check(db: Session = Depends(get_db)):
         db_connected  = check_connection(),
         version       = APP_VERSION,
     )
+
+
+@router.post("/history/record")
+def record_simulation(
+    payload: RecordPayload,
+    db: Session = Depends(get_db),
+):
+    """
+    Persist one simulation snapshot to PostgreSQL.
+    Called by the frontend useHistoryRecorder hook every ~10 seconds.
+    This is the AUTHORITATIVE write path — more reliable than writing
+    from the GET /metrics endpoint.
+    Returns {"ok": true, "session_id": "..."} on success.
+    Raises HTTP 500 with exact error string on failure (no silent swallowing).
+    """
+    from fastapi import HTTPException
+    try:
+        run = SimulationRun(
+            noise_level           = payload.noise_level,
+            attack_probability    = payload.attack_probability,
+            final_qber            = payload.final_qber,
+            sifted_key_length     = payload.sifted_key_length,
+            eve_qber_contribution = payload.eve_qber_contribution,
+            ml_prediction         = payload.ml_prediction,
+            confidence_score      = payload.confidence_score,
+            model_used            = payload.model_used,
+            actual_attack_status  = payload.actual_attack_status,
+        )
+        db.add(run)
+        db.commit()
+        db.refresh(run)
+        print(f"[history/record] OK session_id={run.session_id} "
+              f"qber={payload.final_qber} threat={payload.ml_prediction}")
+        return {"ok": True, "session_id": run.session_id}
+    except Exception as exc:
+        print(f"[history/record] FAIL: {exc}")
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(exc))
 
 
 @router.get("/models", response_model=ModelListResponse)
@@ -118,3 +173,20 @@ def test_write():
                 "error_type": type(exc).__name__}
     finally:
         db.close()
+
+
+@router.get("/history/migrate-db")
+def migrate_db():
+    """
+    Diagnostic & repair endpoint: recreates the simulation_runs table on PostgreSQL.
+    Guarantees the table has the latest schema matching models.py.
+    """
+    from backend.database import engine
+    from backend.models import SimulationRun
+    try:
+        SimulationRun.__table__.drop(engine, checkfirst=True)
+        SimulationRun.__table__.create(engine, checkfirst=True)
+        return {"ok": True, "message": "simulation_runs table dropped and recreated successfully with latest schema."}
+    except Exception as exc:
+        return {"ok": False, "error": str(exc)}
+

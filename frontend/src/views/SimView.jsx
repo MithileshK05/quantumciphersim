@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useQKDMetrics } from '../hooks/useQKDMetrics';
+import { useHistoryRecorder } from '../hooks/useHistoryRecorder';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { QuantumChannel } from '../components/3d/QuantumChannel';
 import { useSimulation } from '../context/SimulationContext';
@@ -24,6 +25,9 @@ const SimView = () => {
     autoMitigate,
     activeProtocol
   );
+
+  // Authoritative write path: record simulation snapshots to PostgreSQL every 10s
+  useHistoryRecorder(metrics, noiseLevel, isAttacked ? 1.0 : 0.0, 'gradient_boosting');
 
   // ── Data Stream — NO early-return guard (was the graph-freeze bug) ────────
   // Previously a lastUpdateRef check killed updates when backend returned
