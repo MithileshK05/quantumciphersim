@@ -14,10 +14,10 @@ qiskit>=1.0.0
 qiskit-aer>=0.14.0
 
 # ── ML Pipeline ───────────────────────────────────────────────────────────
-scikit-learn>=1.4.0,<1.5.0   # bounded — must match version used for training
+scikit-learn>=1.8.0          # bounded — must match version 1.8.0 used for training
 numpy>=1.26.0,<2.0.0          # numpy 2.x has breaking API changes
 pandas>=2.0.0
-joblib>=1.3.0,<1.5.0
+joblib>=1.4.0
 
 # ── Backend (FastAPI) ─────────────────────────────────────────────────────
 fastapi>=0.110.0
