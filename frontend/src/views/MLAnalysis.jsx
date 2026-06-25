@@ -69,7 +69,7 @@ const MLAnalysis = () => {
   const e91Metrics = React.useMemo(() => {
     const qber = metrics?.qber ?? 0;
     const chshScore        = Math.min(2 * Math.SQRT2 * (1 - 2 * qber), 2 * Math.SQRT2);
-    const bellViolation    = Math.max(0, ((chshScore - 2.0) / (2 * Math.SQRT2 - 2.0)) * 100);
+    const bellViolation    = Math.max(0, (1 - qber) * 100);
     const entanglementFid  = Math.max(0, (1 - 2 * qber) * 100);
     const correlationCoeff = Math.abs(0.7071 * (1 - 2 * qber));
     const isSecure         = chshScore > 2.0;
