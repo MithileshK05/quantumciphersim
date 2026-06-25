@@ -103,11 +103,18 @@ const MLAnalysis = () => {
     let attackValue, secureValue, attackFill;
 
     if (isAttacked) {
-      // When attack is ON, the model correctly identifies the Intercept-Resend Attack
-      // with confidence matching its retrained high accuracy (100%, 99.81%, 99.79%)
-      attackValue = modelAcc * 100;
-      secureValue = 100 - attackValue;
-      attackFill  = mitigated ? '#FF9500' : '#FF003C';
+      if (mitigated) {
+        // When attack is ON but auto-mitigation is ON, the threat is successfully neutralized!
+        // The channel is restored to a Secure Channel matching the model's accuracy/security metrics.
+        secureValue = modelAcc * 100;
+        attackValue = 100 - secureValue;
+        attackFill  = '#FF9500';
+      } else {
+        // When attack is ON and auto-mitigation is OFF, the unmitigated attack is detected.
+        attackValue = modelAcc * 100;
+        secureValue = 100 - attackValue;
+        attackFill  = '#FF003C';
+      }
     } else {
       // When attack is OFF, channel is secure matching model accuracy
       secureValue = modelAcc * 100;
