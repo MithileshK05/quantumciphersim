@@ -4,7 +4,7 @@ services:
     runtime: python
     rootDir: .
     pythonVersion: "3.11.9"
-    buildCommand: pip install -r requirements.txt
+    buildCommand: pip install -r requirements.txt && python ml/generate_dataset.py && python ml/train_model.py
     startCommand: python -m uvicorn backend.main:app --host 0.0.0.0 --port $PORT
     plan: free
     envVars:

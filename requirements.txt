@@ -14,7 +14,7 @@ qiskit>=1.0.0
 qiskit-aer>=0.14.0
 
 # ── ML Pipeline ───────────────────────────────────────────────────────────
-scikit-learn==1.8.0          # EXACT pin — models were pickled with 1.8.0; changing breaks joblib.load()
+scikit-learn>=1.4.0          # models retrained on Render at build time — no pickle version lock needed
 numpy>=1.26.0,<2.0.0          # numpy 2.x has breaking API changes
 pandas>=2.0.0
 joblib>=1.4.0
