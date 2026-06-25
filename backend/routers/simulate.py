@@ -34,7 +34,10 @@ from ml.inference      import compute_features
 
 # Qiskit simulator (high-fidelity, slower)
 try:
-    from bb84_simulator import simulate_bb84 as _qiskit_simulate
+    try:
+        from tools.bb84_simulator import simulate_bb84 as _qiskit_simulate
+    except ImportError:
+        from bb84_simulator import simulate_bb84 as _qiskit_simulate
     _QISKIT_AVAILABLE = True
     print("[simulate] Qiskit simulator loaded OK")
 except ImportError as _e:
